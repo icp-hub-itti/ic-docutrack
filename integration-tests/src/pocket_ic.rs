@@ -1,7 +1,8 @@
 use std::io::Read as _;
 use std::path::PathBuf;
 
-use candid::{CandidType, Decode, Principal};
+use candid::{CandidType, Decode, Encode, Principal};
+use did::orbit_station::{AdminInitInput, SystemInit, SystemInstall, SystemUpgraderInput};
 use pocket_ic::nonblocking::PocketIc;
 use serde::de::DeserializeOwned;
 
@@ -14,6 +15,7 @@ const DEFAULT_CYCLES: u128 = 2_000_000_000_000_000;
 pub struct PocketIcTestEnv {
     pub pic: PocketIc,
     pub backend: Principal,
+    pub orbit_station: Principal,
 }
 
 impl TestEnv for PocketIcTestEnv {
@@ -88,17 +90,26 @@ impl PocketIcTestEnv {
         // create canisters
         let backend = pic.create_canister().await;
         println!("Backend: {backend}",);
+        let orbit_station = pic.create_canister().await;
+        println!("Orbit station: {orbit_station}",);
 
+        // install orbit station
+        Self::install_orbit_station(&pic, orbit_station, backend).await;
         // install the backend canister
         Self::install_backend(&pic, backend).await;
 
-        Self { pic, backend }
+        Self {
+            backend,
+            pic,
+            orbit_station,
+        }
     }
 
     fn is_live(&self) -> bool {
         self.pic.url().is_some()
     }
 
+    /// Install [`Canister::Backend`] canister
     async fn install_backend(pic: &PocketIc, canister_id: Principal) {
         pic.add_cycles(canister_id, DEFAULT_CYCLES).await;
 
@@ -107,6 +118,29 @@ impl PocketIcTestEnv {
         //let init_arg = todo!();
         let init_arg = vec![]; // Encode!(&init_arg).unwrap();
 
+        pic.install_canister(canister_id, wasm_bytes, init_arg, None)
+            .await;
+    }
+
+    /// Install [`Canister::OrbitStation`] canister
+    async fn install_orbit_station(pic: &PocketIc, canister_id: Principal, backend: Principal) {
+        pic.add_cycles(canister_id, DEFAULT_CYCLES).await;
+        let wasm_bytes = Self::load_wasm(Canister::OrbitStation);
+
+        let init_arg = Some(SystemInstall::Init(SystemInit {
+            name: "orbit_station".to_string(),
+            assets: None,
+            fallback_controller: None,
+            upgrader: SystemUpgraderInput::Id(canister_id),
+            accounts: None,
+            admins: vec![AdminInitInput {
+                name: "backend".to_string(),
+                identity: backend,
+            }],
+            quorum: None,
+        }));
+
+        let init_arg = Encode!(&init_arg).expect("Failed to encode init arg");
         pic.install_canister(canister_id, wasm_bytes, init_arg, None)
             .await;
     }

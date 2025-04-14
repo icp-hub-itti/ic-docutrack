@@ -1744,6 +1744,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "candid",
+ "did",
  "ic-agent",
  "ic-exports",
  "ic-test-utils",

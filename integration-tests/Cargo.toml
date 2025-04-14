@@ -7,6 +7,7 @@ license = { workspace = true }
 [dependencies]
 anyhow = "1"
 candid = { workspace = true }
+did = { path = "../backend/did" }
 ic-agent = "0.39"
 ic-exports = { git = "https://github.com/bitfinity-network/canister-sdk", package = "ic-exports", tag = "v0.24.x" }
 ic-test-utils = { git = "https://github.com/bitfinity-network/canister-sdk", package = "ic-test-utils", tag = "v0.24.x" }

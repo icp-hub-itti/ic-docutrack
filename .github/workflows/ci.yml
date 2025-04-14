@@ -63,4 +63,5 @@ jobs:
 
       - name: test
         run: |
+          just fetch_all_canisters
           just test_all
