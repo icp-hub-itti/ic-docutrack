@@ -294,14 +294,6 @@ fn init_alias_generator() -> AliasGenerator {
     AliasGenerator::new(Randomness::try_from(get_randomness_seed().as_slice()).unwrap())
 }
 
-pub fn ceil_division(dividend: usize, divisor: usize) -> usize {
-    if dividend % divisor == 0 {
-        dividend / divisor
-    } else {
-        dividend / divisor + 1
-    }
-}
-
 fn init_file_contents() -> StableBTreeMap<(FileId, ChunkId), Vec<u8>, Memory> {
     StableBTreeMap::init(crate::memory::get_file_contents_memory())
 }
