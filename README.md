@@ -40,7 +40,7 @@ The best solution for the first three bullet points is to apply [vetKeys](https:
 Just run the following command to build all canisters:
 
 ```sh
-just build_all
+just build_all_canisters
 ```
 
 ### Test canisters

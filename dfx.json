@@ -4,29 +4,21 @@
     "backend": {
       "type": "rust",
       "package": "backend",
-      "candid": "./backend/service.did",
+      "candid": "./backend/backend/service.did",
       "declarations": {
         "node_compatibility": true
       }
     },
     "frontend": {
       "build": "pnpm --filter frontend run build",
-      "dependencies": [
-        "backend"
-      ],
-      "source": [
-        "frontend/build/"
-      ],
+      "dependencies": ["backend"],
+      "source": ["frontend/build/"],
       "type": "assets"
     },
     "marketing": {
       "build": "pnpm --filter landing-page run build",
-      "dependencies": [
-        "frontend"
-      ],
-      "source": [
-        "landing-page/dist/"
-      ],
+      "dependencies": ["frontend"],
+      "source": ["landing-page/dist/"],
       "type": "assets"
     },
     "internet_identity": {
