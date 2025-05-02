@@ -1,3 +1,5 @@
+
+
 use crate::{AliasInfo, FileMetadata, GetAliasInfoError, PublicUser, State};
 
 pub fn get_alias_info(state: &State, alias: String) -> Result<AliasInfo, GetAliasInfoError> {
@@ -7,19 +9,19 @@ pub fn get_alias_info(state: &State, alias: String) -> Result<AliasInfo, GetAlia
         .ok_or(GetAliasInfoError::NotFound)
         .map(|file_id| {
             let file_metadata = get_file_metadata(state, *file_id);
-            let user = state
-                .users
-                .get(&file_metadata.requester_principal)
-                .unwrap()
-                .clone();
+            // let user = state
+            //     .users
+            //     .get(&file_metadata.requester_principal)
+            //     .unwrap()
+            //     .clone();
 
             AliasInfo {
                 file_id: *file_id,
                 file_name: file_metadata.file_name.clone(),
                 user: PublicUser {
-                    username: user.username,
-                    public_key: user.public_key,
-                    ic_principal: file_metadata.requester_principal,
+                    username: /*user.username */"MockName".to_string(),
+                    public_key: /*user.public_key */file_metadata.user_public_key.clone(),
+                    ic_principal: file_metadata.requester_principal.clone(),
                 },
             }
         })
