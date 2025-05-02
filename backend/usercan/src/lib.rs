@@ -1,7 +1,8 @@
-mod aliases;
+// mod aliases;
 pub mod api;
 mod memory;
 mod upgrade;
+mod aliases;
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -25,27 +26,29 @@ thread_local! {
 type FileId = u64;
 type ChunkId = u64;
 
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(CandidType, Serialize, Deserialize, Clone,Debug,/* PartialEq, Eq*/)]
 pub struct User {
     pub username: String,
     pub public_key: Vec<u8>,
+    pub canister_id: Principal,
 }
 
-#[derive(CandidType, Serialize, Deserialize)]
-pub enum SetUserResponse {
-    #[serde(rename = "ok")]
-    Ok,
-    #[serde(rename = "username_exists")]
-    UsernameExists,
-}
 
-#[derive(CandidType, Serialize, Deserialize)]
-pub enum WhoamiResponse {
-    #[serde(rename = "known_user")]
-    KnownUser(PublicUser),
-    #[serde(rename = "unknown_user")]
-    UnknownUser,
-}
+// #[derive(CandidType, Serialize, Deserialize)]
+// pub enum SetUserResponse {
+//     #[serde(rename = "ok")]
+//     Ok,
+//     #[serde(rename = "username_exists")]
+//     UsernameExists,
+// }
+
+// #[derive(CandidType, Serialize, Deserialize)]
+// pub enum WhoamiResponse {
+//     #[serde(rename = "known_user")]
+//     KnownUser(PublicUser),
+//     #[serde(rename = "unknown_user")]
+//     UnknownUser,
+// }
 
 /// File metadata.
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -158,11 +161,13 @@ pub enum FileSharingResponse {
 #[derive(Serialize, Deserialize)]
 pub struct State {
     // Keeps track of how many files have been requested so far
-    // and is used to assign IDs to newly requested files.
+    // and is used to assign IDs to newly requested files. 
+    // Local canister scope
     file_count: u64,
 
     /// Keeps track of usernames vs. their principals.
-    pub users: BTreeMap<Principal, User>,
+    // pub users: BTreeMap<Principal, User>,
+    me: User,
 
     /// Mapping between file IDs and file information.
     pub file_data: BTreeMap<u64, File>,
@@ -171,10 +176,15 @@ pub struct State {
     pub file_alias_index: BTreeMap<String, u64>,
 
     /// Mapping between a user's principal and the list of files that are owned by the user.
-    pub file_owners: BTreeMap<Principal, Vec<u64>>,
+    // pub file_owners: BTreeMap<Principal, Vec<u64>>,//could be just a vector of file ids because is private to the user now
+    /// User owned File list Local
+    pub files_owned: Vec<u64>,
 
-    /// Mapping between a user's principal and the list of files that are shared with them.
-    pub file_shares: BTreeMap<Principal, Vec<u64>>,
+    // Mapping between a user's principal and the list of files that are shared with them.
+    // pub file_shares: BTreeMap<Principal, Vec<u64>>,
+    
+    /// Mapping between a owned FileID and the list of users that have access to it. LOCAL source of truth 
+    pub file_shared_with: BTreeMap<u64, Vec<PublicUser>>,
 
     /// The contents of the file (stored in stable memory).
     #[serde(skip, default = "init_file_contents")]
@@ -197,11 +207,20 @@ impl State {
     fn new(rand_seed: &[u8]) -> Self {
         Self {
             file_count: 0,
-            users: BTreeMap::new(),
+            me: User {
+                username: "me".to_string(),
+                public_key: vec![],
+                canister_id: Principal::anonymous(),
+            },
+            
+            // users: BTreeMap::new(),
             file_data: BTreeMap::new(),
             file_alias_index: BTreeMap::new(),
-            file_owners: BTreeMap::new(),
-            file_shares: BTreeMap::new(),
+            // file_owners: BTreeMap::new(),
+            files_owned: Vec::new(),
+
+            // file_shares: BTreeMap::new(),
+            file_shared_with: BTreeMap::new(),
             alias_generator: AliasGenerator::new(Randomness::try_from(rand_seed).unwrap()),
             file_contents: init_file_contents(),
         }
@@ -235,10 +254,10 @@ pub fn with_state_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
     STATE.with(|cell| f(&mut cell.borrow_mut()))
 }
 
-/// Returns an unused file alias.
-pub fn generate_alias() -> String {
-    with_state_mut(|s| s.alias_generator.next())
-}
+// /// Returns an unused file alias.
+// pub fn generate_alias() -> String {
+//     with_state_mut(|s| s.alias_generator.next())
+// }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicUser {
@@ -247,13 +266,13 @@ pub struct PublicUser {
     pub ic_principal: Principal,
 }
 
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub enum GetUsersResponse {
-    #[serde(rename = "permission_error")]
-    PermissionError,
-    #[serde(rename = "users")]
-    Users(Vec<PublicUser>),
-}
+// #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
+// pub enum GetUsersResponse {
+//     #[serde(rename = "permission_error")]
+//     PermissionError,
+//     #[serde(rename = "users")]
+//     Users(Vec<PublicUser>),
+// }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct UploadFileRequest {
@@ -306,51 +325,51 @@ fn init_file_contents() -> StableBTreeMap<(FileId, ChunkId), Vec<u8>, Memory> {
     StableBTreeMap::init(crate::memory::get_file_contents_memory())
 }
 
-#[update]
-fn set_user(username: String, public_key: Vec<u8>) -> SetUserResponse {
-    if with_state(|s| crate::api::username_exists(s, username.clone())) {
-        SetUserResponse::UsernameExists
-    } else {
-        let user = User {
-            username,
-            public_key,
-        };
-        with_state_mut(|s| crate::api::set_user_info(s, caller(), user));
-        SetUserResponse::Ok
-    }
-}
+// #[update]
+// fn set_user(username: String, public_key: Vec<u8>) -> SetUserResponse {
+//     if with_state(|s| crate::api::username_exists(s, username.clone())) {
+//         SetUserResponse::UsernameExists
+//     } else {
+//         let user = User {
+//             username,
+//             public_key,
+//         };
+//         with_state_mut(|s| crate::api::set_user_info(s, caller(), user));
+//         SetUserResponse::Ok
+//     }
+// }
 
-#[query]
-fn username_exists(username: String) -> bool {
-    with_state(|s| crate::api::username_exists(s, username))
-}
+// #[query]
+// fn username_exists(username: String) -> bool {
+//     with_state(|s| crate::api::username_exists(s, username))
+// }
 
-#[query]
-fn who_am_i() -> WhoamiResponse {
-    with_state(|s| match s.users.get(&ic_cdk::api::caller()) {
-        None => WhoamiResponse::UnknownUser,
-        Some(user) => WhoamiResponse::KnownUser(PublicUser {
-            username: user.username.clone(),
-            public_key: user.public_key.clone(),
-            ic_principal: ic_cdk::api::caller(),
-        }),
-    })
-}
+// #[query]
+// fn who_am_i() -> WhoamiResponse {
+//     with_state(|s| match s.users.get(&ic_cdk::api::caller()) {
+//         None => WhoamiResponse::UnknownUser,
+//         Some(user) => WhoamiResponse::KnownUser(PublicUser {
+//             username: user.username.clone(),
+//             public_key: user.public_key.clone(),
+//             ic_principal: ic_cdk::api::caller(),
+//         }),
+//     })
+// }
 
-#[query]
-fn get_requests() -> Vec<PublicFileMetadata> {
-    with_state(|s| crate::api::get_requests(s, caller()))
-}
+// #[query]
+// fn get_requests() -> Vec<PublicFileMetadata> {
+//     with_state(|s| crate::api::get_requests(s, caller()))
+// }
 
-#[query]
-fn get_shared_files() -> Vec<PublicFileMetadata> {
-    with_state(|s| crate::api::get_shared_files(s, caller()))
-}
+// #[query]
+// fn get_shared_files() -> Vec<PublicFileMetadata> {
+//     with_state(|s| crate::api::get_shared_files(s, caller()))
+// }
 
-#[query]
-fn get_alias_info(alias: String) -> Result<AliasInfo, GetAliasInfoError> {
-    with_state(|s| crate::api::get_alias_info(s, alias))
-}
+// #[query]
+// fn get_alias_info(alias: String) -> Result<AliasInfo, GetAliasInfoError> {
+//     with_state(|s| crate::api::get_alias_info(s, alias))
+// }
 
 #[update]
 fn upload_file(request: UploadFileRequest) -> Result<(), UploadFileError> {
@@ -415,10 +434,10 @@ fn revoke_share(user_id: Principal, file_id: u64) -> FileSharingResponse {
     with_state_mut(|s| crate::api::revoke_share(s, caller(), user_id, file_id))
 }
 
-#[query]
-fn get_users() -> GetUsersResponse {
-    with_state(|s| crate::api::get_users(s, caller()))
-}
+// #[query]
+// fn get_users() -> GetUsersResponse {
+//     with_state(|s| crate::api::get_users(s, caller()))
+// }
 
 #[pre_upgrade]
 fn pre_upgrade() {

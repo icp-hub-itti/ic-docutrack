@@ -23,7 +23,13 @@ export const readCanisterIds = ({
   prefix?: string;
 }): Record<string, string> => {
   try {
-    let canisters = ["frontend", "backend", "internet_identity", "marketing"];
+    let canisters = [
+      "frontend",
+      "orchestrator",
+      "usercan",
+      "internet_identity",
+      "marketing",
+    ];
     return canisters.reduce(
       (acc, canisterName) => ({
         ...acc,

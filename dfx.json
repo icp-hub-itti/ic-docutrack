@@ -1,17 +1,25 @@
 {
   "dfx": "0.17.0",
   "canisters": {
-    "backend": {
+    "orchestrator": {
       "type": "rust",
-      "package": "backend",
-      "candid": "./backend/backend/service.did",
+      "package": "orchestrator",
+      "candid": "./.artifact/orchestrator.did",
+      "declarations": {
+        "node_compatibility": true
+      }
+    },
+    "usercan": {
+      "type": "rust",
+      "package": "usercan",
+      "candid": "./.artifact/usercan.did",
       "declarations": {
         "node_compatibility": true
       }
     },
     "frontend": {
       "build": "pnpm --filter frontend run build",
-      "dependencies": ["backend"],
+      "dependencies": ["orchestrator", "usercan"],
       "source": ["frontend/build/"],
       "type": "assets"
     },

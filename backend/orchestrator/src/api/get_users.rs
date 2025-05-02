@@ -37,6 +37,7 @@ mod test {
             User {
                 username: "John".to_string(),
                 public_key: vec![1, 2, 3],
+                canister_id: Principal::from_slice(&[3, 4, 5]),
             },
         );
         // set 2nd user
@@ -46,6 +47,7 @@ mod test {
             User {
                 username: "John".to_string(),
                 public_key: vec![3, 2, 3],
+                canister_id: Principal::from_slice(&[3, 5, 5]),
             },
         );
         // set 3rd user
@@ -55,6 +57,7 @@ mod test {
             User {
                 username: "Mike".to_string(),
                 public_key: vec![1, 6, 3],
+                canister_id: Principal::from_slice(&[2, 4, 5]),
             },
         );
 
@@ -76,6 +79,7 @@ mod test {
             User {
                 username: "John".to_string(),
                 public_key: vec![1, 2, 3],
+                canister_id: Principal::from_slice(&[3, 4, 5]),
             },
         );
         let users = get_users(&state, Principal::anonymous());
