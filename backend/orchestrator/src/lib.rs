@@ -320,7 +320,7 @@ fn set_user(username: String, public_key: Vec<u8>) -> SetUserResponse {
         let user = User {
             username,
             public_key,
-            canister_id: Principal::anonymous(),
+            canister_id: Principal::anonymous(),//Initially setted to anonymous. if triggered after canister creation TODO change this.
         };
         with_state_mut(|s| crate::api::set_user_info(s, caller(), user));
         SetUserResponse::Ok

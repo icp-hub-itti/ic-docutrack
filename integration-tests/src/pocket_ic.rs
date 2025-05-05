@@ -21,19 +21,20 @@ const NNS_ROOT_CANISTER_ID: Principal = Principal::from_slice(&[0, 0, 0, 0, 0, 0
 /// Test environment
 pub struct PocketIcTestEnv {
     pub pic: PocketIc,
-    pub backend: Principal,
+    pub orchestrator: Principal,
+    pub user_canister1: Principal,
+    
     pub orbit_station: Principal,
     /// Uuid of the station admin
     station_admin: String,
 }
 
 impl TestEnv for PocketIcTestEnv {
-    fn admin(&self) -> Principal {
-        admin()
+    fn orchestrator(&self) -> Principal {
+        self.orchestrator
     }
-
-    fn backend(&self) -> Principal {
-        self.backend
+    fn user_canister1(&self) -> Principal {
+        self.user_canister1
     }
 
     fn orbit_station(&self) -> Principal {
@@ -99,6 +100,7 @@ impl TestEnv for PocketIcTestEnv {
 impl PocketIcTestEnv {
     /// Install the canisters needed for the tests
     pub async fn init() -> Self {
+        println!("Initializing Pocket IC test environment...");
         let pic = ic_exports::pocket_ic::init_pocket_ic()
             .await
             .with_nns_subnet()
@@ -110,8 +112,10 @@ impl PocketIcTestEnv {
             .await;
 
         // create canisters
-        let backend = pic.create_canister_with_settings(Some(admin()), None).await;
-        println!("Backend: {backend}",);
+        let orchestrator = pic.create_canister_with_settings(Some(admin()), None).await;
+        println!("Orchestrator: {orchestrator}",);
+        let user_canister1 = pic.create_canister().await;
+        println!("User canister: {user_canister1}",);
         let orbit_station = pic.create_canister_with_settings(Some(admin()), None).await;
         println!("Orbit station: {orbit_station}",);
 
@@ -125,15 +129,16 @@ impl PocketIcTestEnv {
 
         // install orbit station
         Self::install_orbit_station(&pic, orbit_station).await;
-        // install the backend canister
-        Self::install_backend(&pic, backend).await;
+        // install the wasm canister
+        Self::install_backend(&pic, orchestrator, "orchestrator").await;
+        Self::install_backend(&pic, user_canister1, "usercan").await;
 
         // get station admin
         let station_admin = Self::get_station_admin(&pic, orbit_station).await;
         println!("Station admin: {station_admin}",);
 
         Self {
-            backend,
+            orchestrator, user_canister1,
             pic,
             orbit_station,
             station_admin,
@@ -144,11 +149,16 @@ impl PocketIcTestEnv {
         self.pic.url().is_some()
     }
 
-    /// Install [`Canister::Backend`] canister
-    async fn install_backend(pic: &PocketIc, canister_id: Principal) {
+    async fn install_backend(pic: &PocketIc, canister_id: Principal, canister_type: &str) {
         pic.add_cycles(canister_id, DEFAULT_CYCLES).await;
 
-        let wasm_bytes = Self::load_wasm(Canister::Backend);
+        // let wasm_bytes = Self::load_wasm(Canister::Backend);
+        let wasm_bytes = Self::load_wasm(match canister_type {
+            "orchestrator" => Canister::Orchestrator,
+            "usercan" => Canister::UserCan,
+            _ => panic!("Unknown canister type"),
+        });
+        println!("Wasm size: {} for {}", wasm_bytes.len(), canister_type);
 
         //let init_arg = todo!();
         let init_arg = vec![]; // Encode!(&init_arg).unwrap();

@@ -76,8 +76,8 @@ pub use user_info::{set_user_info, username_exists};
 //     assert_eq!(state.file_data.insert(file_id, updated_file_data), None);
 // }
 
-#[cfg(test)]
-mod test {
+// #[cfg(test)]
+// mod test {
     // use std::collections::BTreeMap;
 
     // use candid::Principal;
@@ -213,4 +213,4 @@ mod test {
     //     );
     //     assert_eq!(state.num_chunks_uploaded(file_id), 3);
     // }
-}
+// }

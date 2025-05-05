@@ -30,24 +30,15 @@ pub struct User {
     pub username: String,
     pub public_key: Vec<u8>,
     pub canister_id: Principal,
+
 }
 
-
-// #[derive(CandidType, Serialize, Deserialize)]
-// pub enum SetUserResponse {
-//     #[serde(rename = "ok")]
-//     Ok,
-//     #[serde(rename = "username_exists")]
-//     UsernameExists,
-// }
-
-// #[derive(CandidType, Serialize, Deserialize)]
-// pub enum WhoamiResponse {
-//     #[serde(rename = "known_user")]
-//     KnownUser(PublicUser),
-//     #[serde(rename = "unknown_user")]
-//     UnknownUser,
-// }
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct PublicUser {
+    pub username: String,
+    pub public_key: Vec<u8>,
+    pub ic_principal: Principal,
+}
 
 /// File metadata.
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -258,12 +249,7 @@ pub fn with_state_mut<R>(f: impl FnOnce(&mut State) -> R) -> R {
 //     with_state_mut(|s| s.alias_generator.next())
 // }
 
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct PublicUser {
-    pub username: String,
-    pub public_key: Vec<u8>,
-    pub ic_principal: Principal,
-}
+
 
 // #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
 // pub enum GetUsersResponse {
@@ -316,21 +302,6 @@ fn init_file_contents() -> StableBTreeMap<(FileId, ChunkId), Vec<u8>, Memory> {
     StableBTreeMap::init(crate::memory::get_file_contents_memory())
 }
 
-<<<<<<< HEAD:backend/backend/src/lib.rs
-#[update]
-fn set_user(username: String, public_key: Vec<u8>) -> SetUserResponse {
-    if with_state(|s| crate::api::username_exists(s, username.clone())) {
-        SetUserResponse::UsernameExists
-    } else {
-        let user = User {
-            username,
-            public_key,
-        };
-        with_state_mut(|s| crate::api::set_user_info(s, ic_cdk::api::msg_caller(), user));
-        SetUserResponse::Ok
-    }
-}
-=======
 // #[update]
 // fn set_user(username: String, public_key: Vec<u8>) -> SetUserResponse {
 //     if with_state(|s| crate::api::username_exists(s, username.clone())) {
@@ -344,36 +315,14 @@ fn set_user(username: String, public_key: Vec<u8>) -> SetUserResponse {
 //         SetUserResponse::Ok
 //     }
 // }
->>>>>>> 30b2776 (initial split arch sketch):backend/usercan/src/lib.rs
+
 
 // #[query]
 // fn username_exists(username: String) -> bool {
 //     with_state(|s| crate::api::username_exists(s, username))
 // }
 
-<<<<<<< HEAD:backend/backend/src/lib.rs
-#[query]
-fn who_am_i() -> WhoamiResponse {
-    with_state(|s| match s.users.get(&ic_cdk::api::msg_caller()) {
-        None => WhoamiResponse::UnknownUser,
-        Some(user) => WhoamiResponse::KnownUser(PublicUser {
-            username: user.username.clone(),
-            public_key: user.public_key.clone(),
-            ic_principal: ic_cdk::api::msg_caller(),
-        }),
-    })
-}
 
-#[query]
-fn get_requests() -> Vec<PublicFileMetadata> {
-    with_state(|s| crate::api::get_requests(s, ic_cdk::api::msg_caller()))
-}
-
-#[query]
-fn get_shared_files() -> Vec<PublicFileMetadata> {
-    with_state(|s| crate::api::get_shared_files(s, ic_cdk::api::msg_caller()))
-}
-=======
 // #[query]
 // fn who_am_i() -> WhoamiResponse {
 //     with_state(|s| match s.users.get(&ic_cdk::api::caller()) {
@@ -395,7 +344,7 @@ fn get_shared_files() -> Vec<PublicFileMetadata> {
 // fn get_shared_files() -> Vec<PublicFileMetadata> {
 //     with_state(|s| crate::api::get_shared_files(s, caller()))
 // }
->>>>>>> 30b2776 (initial split arch sketch):backend/usercan/src/lib.rs
+
 
 // #[query]
 // fn get_alias_info(alias: String) -> Result<AliasInfo, GetAliasInfoError> {
@@ -418,7 +367,7 @@ fn upload_file(request: UploadFileRequest) -> Result<(), UploadFileError> {
 
 #[update]
 fn upload_file_atomic(request: UploadFileAtomicRequest) -> u64 {
-    with_state_mut(|s| crate::api::upload_file_atomic(ic_cdk::api::msg_caller(), request, s))
+    with_state_mut(|s| crate::api::upload_file_atomic(ic_cdk::api::caller(), request, s))
 }
 
 #[update]
@@ -428,12 +377,12 @@ fn upload_file_continue(request: UploadFileContinueRequest) {
 
 #[update]
 fn request_file(request_name: String) -> String {
-    with_state_mut(|s| crate::api::request_file(ic_cdk::api::msg_caller(), request_name, s))
+    with_state_mut(|s| crate::api::request_file(ic_cdk::api::caller(), request_name, s))
 }
 
 #[query]
 fn download_file(file_id: u64, chunk_id: u64) -> FileDownloadResponse {
-    with_state(|s| crate::api::download_file(s, file_id, chunk_id, ic_cdk::api::msg_caller()))
+    with_state(|s| crate::api::download_file(s, file_id, chunk_id, ic_cdk::api::caller()))
 }
 
 #[update]
@@ -445,7 +394,7 @@ fn share_file(
     with_state_mut(|s| {
         crate::api::share_file(
             s,
-            ic_cdk::api::msg_caller(),
+            ic_cdk::api::caller(),
             user_id,
             file_id,
             file_key_encrypted_for_user,
@@ -461,27 +410,21 @@ fn share_file_with_users(
 ) {
     with_state_mut(|s| {
         for (id, key) in user_id.iter().zip(file_key_encrypted_for_user.iter()) {
-            crate::api::share_file(s, ic_cdk::api::msg_caller(), *id, file_id, key.clone());
+            crate::api::share_file(s, ic_cdk::api::caller(), *id, file_id, key.clone());
         }
     });
 }
 
 #[update]
 fn revoke_share(user_id: Principal, file_id: u64) -> FileSharingResponse {
-    with_state_mut(|s| crate::api::revoke_share(s, ic_cdk::api::msg_caller(), user_id, file_id))
+    with_state_mut(|s| crate::api::revoke_share(s, ic_cdk::api::caller(), user_id, file_id))
 }
 
-<<<<<<< HEAD:backend/backend/src/lib.rs
-#[query]
-fn get_users() -> GetUsersResponse {
-    with_state(|s| crate::api::get_users(s, ic_cdk::api::msg_caller()))
-}
-=======
 // #[query]
 // fn get_users() -> GetUsersResponse {
 //     with_state(|s| crate::api::get_users(s, caller()))
 // }
->>>>>>> 30b2776 (initial split arch sketch):backend/usercan/src/lib.rs
+
 
 #[pre_upgrade]
 fn pre_upgrade() {

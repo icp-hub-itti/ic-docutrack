@@ -34,7 +34,8 @@ pub trait TestEnv {
     fn admin(&self) -> Principal;
 
     /// Backend canister id
-    fn backend(&self) -> Principal;
+    fn orchestrator(&self) -> Principal;
+    fn user_canister1(&self) -> Principal;
 
     /// Orbit station canister id
     fn orbit_station(&self) -> Principal;
