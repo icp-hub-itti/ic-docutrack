@@ -44,6 +44,9 @@ impl TestEnv for PocketIcTestEnv {
     fn station_admin(&self) -> String {
         self.station_admin.clone()
     }
+    fn admin(&self) -> Principal {
+        admin()
+    }
 
     async fn query<R>(
         &self,

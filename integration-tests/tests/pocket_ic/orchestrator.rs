@@ -1,6 +1,7 @@
 use candid::Encode;
 use did::State;
-use did::orchestrator::SetUserResponse;
+// use did::orchestrator::SetUserResponse;
+use orchestrator::SetUserResponse;
 use integration_tests::{PocketIcTestEnv, TestEnv as _};
 use integration_tests::actor::bob;
 
