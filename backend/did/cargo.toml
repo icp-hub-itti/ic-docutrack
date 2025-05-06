@@ -4,6 +4,7 @@ version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 rust-version = { workspace = true }
+build = "build.rs"
 
 [lib]
 name = "did"
@@ -14,6 +15,10 @@ path = "src/lib.rs"
 [dependencies]
 candid = { workspace = true }
 ic-cdk = { workspace = true }
-ic-stable-structures = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
+
+[build-dependencies]
+candid_parser = { workspace = true }
+cargo_metadata = { workspace = true }
+station-api = { workspace = true }
