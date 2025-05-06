@@ -6,12 +6,6 @@ license = { workspace = true }
 rust-version = { workspace = true }
 build = "build.rs"
 
-[lib]
-name = "did"
-path = "src/lib.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 candid = { workspace = true }
 ic-cdk = { workspace = true }
