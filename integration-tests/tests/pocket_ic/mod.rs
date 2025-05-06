@@ -1,3 +1,4 @@
+mod orchestrator;
 use integration_tests::PocketIcTestEnv;
 
 #[tokio::test]

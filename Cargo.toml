@@ -1,5 +1,5 @@
 [workspace]
-members = ["backend/orchestrator", "backend/usercan", "integration-tests"]
+members = ["backend/orchestrator", "backend/usercan", "integration-tests", "backend/did"]
 resolver = "2"
 
 [workspace.package]

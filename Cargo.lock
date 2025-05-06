@@ -660,6 +660,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "did"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "ic-cdk 0.17.1",
+ "ic-stable-structures",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
