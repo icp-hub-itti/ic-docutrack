@@ -73,3 +73,23 @@ async fn test_should_not_get_users_if_anonymous() {
 
     env.stop().await;
 }
+
+#[tokio::test]
+async fn test_should_create_user_canister() {
+    let env = PocketIcTestEnv::init().await;
+    let client = OrchestratorClient::from(&env);
+
+    let me = Principal::from_slice(&[1; 29]);
+    let username = "foo".to_string();
+    let public_key = [1; PUBKEY_SIZE];
+
+    // create user canister
+    let response = client.set_user(me, username, public_key).await;
+    assert_eq!(response, SetUserResponse::Ok);
+
+    // wait for user canister to be created
+    let user_canister = client.wait_for_user_canister(me).await;
+    assert_ne!(user_canister, Principal::anonymous());
+
+    env.stop().await;
+}

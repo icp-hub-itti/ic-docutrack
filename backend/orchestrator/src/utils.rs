@@ -1,4 +1,5 @@
 use candid::Principal;
+use time::OffsetDateTime;
 
 /// Utility functions to trap the canister.
 ///
@@ -24,4 +25,24 @@ pub fn msg_caller() -> Principal {
     } else {
         Principal::from_slice(&[1; 29])
     }
+}
+
+/// Returns current time in nanoseconds
+pub fn time() -> u64 {
+    if cfg!(target_family = "wasm") {
+        ic_cdk::api::time()
+    } else {
+        let time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("SystemTime before UNIX EPOCH");
+        time.as_nanos() as u64
+    }
+}
+
+/// Returns current datetime
+pub fn datetime() -> OffsetDateTime {
+    let time = time();
+
+    OffsetDateTime::from_unix_timestamp_nanos(time as i128)
+        .unwrap_or_else(|_| trap("Failed to convert time to OffsetDateTime"))
 }

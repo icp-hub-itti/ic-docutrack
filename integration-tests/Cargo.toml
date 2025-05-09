@@ -8,12 +8,13 @@ license = { workspace = true }
 anyhow = "1"
 candid = { workspace = true }
 did = { path = "../backend/did" }
+flate2 = "1"
 ic-agent = "0.40"
-ic-exports = { git = "https://github.com/bitfinity-network/canister-sdk", package = "ic-exports", tag = "v0.24.x" }
 ic-ledger-types = "0.15.0"
-ic-test-utils = { git = "https://github.com/bitfinity-network/canister-sdk", package = "ic-test-utils", tag = "v0.24.x" }
 ic-utils = "0.40"
-pocket-ic = "7"
+log = "0.4"
+pocket-ic = "9"
+reqwest = { version = "0.12", default-features = false }
 serde = { workspace = true }
 tokio = { version = "1", features = ["full"] }
 
@@ -23,4 +24,4 @@ pretty_assertions = "1"
 [features]
 default = []
 dfx = []
-pocket-ic = ["ic-exports/pocket-ic-tests"]
+pocket-ic = []
