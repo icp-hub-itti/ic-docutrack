@@ -11,7 +11,9 @@ use did::orbit_station::{
     AdminInitInput, HealthStatus, ListUsersInput, ListUsersResult, SystemInit, SystemInstall,
     SystemUpgraderInput,
 };
-use did::orchestrator::{OrchestratorInitArgs, PUBKEY_SIZE, SetUserResponse};
+use did::orchestrator::{
+    OrchestratorInitArgs, OrchestratorInstallArgs, PUBKEY_SIZE, SetUserResponse,
+};
 use pocket_ic::nonblocking::PocketIc;
 use serde::de::DeserializeOwned;
 
@@ -209,10 +211,10 @@ impl PocketIcTestEnv {
 
         let wasm_bytes = Self::load_wasm(Canister::Orchestrator);
 
-        let init_arg = Encode!(&OrchestratorInitArgs {
+        let init_arg = Encode!(&OrchestratorInstallArgs::Init(OrchestratorInitArgs {
             orbit_station,
             orbit_station_admin
-        })
+        }))
         .expect("Failed to encode init arg");
 
         pic.install_canister(canister_id, wasm_bytes, init_arg, Some(admin()))

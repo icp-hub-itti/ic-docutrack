@@ -10,7 +10,7 @@ use did::orchestrator::PublicKey;
 use did::user_canister::{
     AliasInfo, FileDownloadResponse, FileSharingResponse, GetAliasInfoError, OwnerKey,
     PublicFileMetadata, UploadFileAtomicRequest, UploadFileContinueRequest, UploadFileError,
-    UploadFileRequest, UserCanisterInitArgs,
+    UploadFileRequest, UserCanisterInstallArgs,
 };
 use ic_cdk_macros::{init, query, update};
 use storage::config::Config;
@@ -19,7 +19,7 @@ use utils::msg_caller;
 use self::canister::Canister;
 
 #[init]
-pub fn init(args: UserCanisterInitArgs) {
+pub fn init(args: UserCanisterInstallArgs) {
     Canister::init(args);
 }
 

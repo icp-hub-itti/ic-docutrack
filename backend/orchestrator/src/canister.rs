@@ -3,7 +3,7 @@ mod create_user;
 use candid::Principal;
 use create_user::CreateUserStateMachine;
 use did::orchestrator::{
-    FileId, GetUsersResponse, MAX_USERNAME_SIZE, OrchestratorInitArgs, PublicKey, PublicUser,
+    FileId, GetUsersResponse, MAX_USERNAME_SIZE, OrchestratorInstallArgs, PublicKey, PublicUser,
     RetryUserCanisterCreationResponse, RevokeShareFileResponse, SetUserResponse, ShareFileResponse,
     SharedFilesResponse, User, UserCanisterResponse, WhoamiResponse,
 };
@@ -12,14 +12,18 @@ use crate::storage::config::Config;
 use crate::storage::shared_files::SharedFilesStorage;
 use crate::storage::user_canister::{UserCanisterCreateState, UserCanisterStorage};
 use crate::storage::users::UserStorage;
-use crate::utils::msg_caller;
+use crate::utils::{msg_caller, trap};
 
 /// API for Business Logic
 pub struct Canister;
 
 impl Canister {
     /// Initialize the canister with the given arguments.
-    pub fn init(args: OrchestratorInitArgs) {
+    pub fn init(args: OrchestratorInstallArgs) {
+        let OrchestratorInstallArgs::Init(args) = args else {
+            trap("Invalid arguments");
+        };
+
         Config::set_orbit_station(args.orbit_station);
         Config::set_orbit_station_admin(args.orbit_station_admin);
     }
@@ -272,17 +276,17 @@ mod test {
 
     use std::collections::HashMap;
 
-    use did::orchestrator::User;
+    use did::orchestrator::{OrchestratorInitArgs, User};
 
     use super::*;
 
     #[test]
     fn test_should_init_canister() {
         let orbit_station = Principal::from_text("rwlgt-iiaaa-aaaaa-aaaaa-cai").unwrap();
-        Canister::init(OrchestratorInitArgs {
+        Canister::init(OrchestratorInstallArgs::Init(OrchestratorInitArgs {
             orbit_station,
             orbit_station_admin: "admin".to_string(),
-        });
+        }));
 
         assert_eq!(Config::get_orbit_station(), orbit_station);
     }
@@ -657,9 +661,9 @@ mod test {
 
     fn init_canister() {
         let orbit_station = Principal::from_text("rwlgt-iiaaa-aaaaa-aaaaa-cai").unwrap();
-        Canister::init(OrchestratorInitArgs {
+        Canister::init(OrchestratorInstallArgs::Init(OrchestratorInitArgs {
             orbit_station,
             orbit_station_admin: "admin".to_string(),
-        });
+        }));
     }
 }

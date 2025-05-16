@@ -7,7 +7,7 @@ use did::orchestrator::ShareFileResponse;
 use did::user_canister::{
     AliasInfo, FileData, FileDownloadResponse, FileSharingResponse, FileStatus, GetAliasInfoError,
     OwnerKey, PublicFileMetadata, UploadFileAtomicRequest, UploadFileContinueRequest,
-    UploadFileError, UserCanisterInitArgs,
+    UploadFileError, UserCanisterInstallArgs,
 };
 use did::utils::trap;
 
@@ -25,7 +25,11 @@ pub struct Canister;
 
 impl Canister {
     /// Initialize the canister with the given arguments.
-    pub fn init(args: UserCanisterInitArgs) {
+    pub fn init(args: UserCanisterInstallArgs) {
+        let UserCanisterInstallArgs::Init(args) = args else {
+            trap("Invalid arguments");
+        };
+
         Config::set_orchestrator(args.orchestrator);
         Config::set_owner(args.owner);
     }
@@ -466,6 +470,7 @@ impl Canister {
 #[cfg(test)]
 mod test {
     use candid::Principal;
+    use did::user_canister::UserCanisterInitArgs;
 
     use super::*;
 
@@ -473,10 +478,10 @@ mod test {
     fn test_should_init_canister() {
         let orchestrator = Principal::from_slice(&[0, 1, 2, 3]);
         let owner = Principal::from_slice(&[4, 5, 6, 7]);
-        Canister::init(UserCanisterInitArgs {
+        Canister::init(UserCanisterInstallArgs::Init(UserCanisterInitArgs {
             orchestrator,
             owner,
-        });
+        }));
 
         assert_eq!(Config::get_orchestrator(), orchestrator);
         assert_eq!(Config::get_owner(), owner);
@@ -1011,10 +1016,10 @@ mod test {
 
     fn init() -> Principal {
         let caller = Principal::from_slice(&[0, 1, 2, 3]);
-        Canister::init(UserCanisterInitArgs {
+        Canister::init(UserCanisterInstallArgs::Init(UserCanisterInitArgs {
             orchestrator: Principal::from_slice(&[0, 1, 2, 3]),
             owner: caller,
-        });
+        }));
 
         caller
     }

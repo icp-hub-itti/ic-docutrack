@@ -15,7 +15,16 @@ pub use self::user::{
 pub use self::user_canister::{RetryUserCanisterCreationResponse, UserCanisterResponse};
 pub use self::whoami::WhoamiResponse;
 
-/// Orchestrator canister init arguments
+/// Orchestrator canister install arguments
+#[derive(Debug, CandidType, Serialize, Deserialize)]
+pub enum OrchestratorInstallArgs {
+    /// Arguments for the `init` method
+    Init(OrchestratorInitArgs),
+    /// Arguments for the `post_upgrade` method
+    Upgrade,
+}
+
+/// Orchestrator canister `init` arguments
 #[derive(Debug, CandidType, Serialize, Deserialize)]
 pub struct OrchestratorInitArgs {
     /// UUID of the Orbit Station admin

@@ -7,7 +7,7 @@ use did::orbit_station::{
     ExternalCanisterRequestPoliciesCreateInput, GetRequestInput, GetRequestResult,
     RequestExecutionSchedule, RequestOperationInput, ValidationMethodResourceTarget,
 };
-use did::user_canister::UserCanisterInitArgs;
+use did::user_canister::UserCanisterInstallArgs;
 use ic_cdk::call::{Call, CallRejected, CallResult, Error as CallError};
 
 /// Client for the Orbit Station canister.
@@ -112,7 +112,7 @@ impl OrbitStationClient {
         canister_id: Principal,
         owner: Principal,
         wasm: &[u8],
-        arg: UserCanisterInitArgs,
+        arg: UserCanisterInstallArgs,
     ) -> CallResult<CreateRequestResult> {
         let arg = candid::encode_one(arg).map_err(|e| {
             CallError::CallRejected(CallRejected::with_rejection(

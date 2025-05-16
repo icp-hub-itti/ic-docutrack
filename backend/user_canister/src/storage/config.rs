@@ -71,7 +71,7 @@ impl Config {
 
 #[cfg(test)]
 mod test {
-    use did::user_canister::UserCanisterInitArgs;
+    use did::user_canister::{UserCanisterInitArgs, UserCanisterInstallArgs};
 
     use super::*;
     use crate::canister::Canister;
@@ -93,10 +93,10 @@ mod test {
     fn test_owner_public_key() {
         let public_key = [4; 32];
         let caller = Principal::from_slice(&[5; 29]);
-        Canister::init(UserCanisterInitArgs {
+        Canister::init(UserCanisterInstallArgs::Init(UserCanisterInitArgs {
             owner: caller,
             orchestrator: Principal::from_slice(&[3; 29]),
-        });
+        }));
         Config::set_owner_public_key(caller, public_key);
         assert_eq!(Config::get_owner_public_key(), public_key);
     }

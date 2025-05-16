@@ -9,6 +9,15 @@ pub use self::file::{
     UploadFileContinueRequest, UploadFileError, UploadFileRequest,
 };
 
+/// User Canister canister install arguments.
+#[derive(Debug, CandidType, Serialize, Deserialize)]
+pub enum UserCanisterInstallArgs {
+    /// Arguments for the `init` method
+    Init(UserCanisterInitArgs),
+    /// Arguments for the `post_upgrade` method
+    Upgrade,
+}
+
 /// User Canister canister init arguments.
 #[derive(Debug, CandidType, Serialize, Deserialize)]
 pub struct UserCanisterInitArgs {

@@ -5,9 +5,9 @@ mod utils;
 
 use candid::Principal;
 use did::orchestrator::{
-    FileId, GetUsersResponse, OrchestratorInitArgs, PublicKey, RetryUserCanisterCreationResponse,
-    RevokeShareFileResponse, SetUserResponse, ShareFileResponse, SharedFilesResponse,
-    UserCanisterResponse, WhoamiResponse,
+    FileId, GetUsersResponse, OrchestratorInstallArgs, PublicKey,
+    RetryUserCanisterCreationResponse, RevokeShareFileResponse, SetUserResponse, ShareFileResponse,
+    SharedFilesResponse, UserCanisterResponse, WhoamiResponse,
 };
 use ic_cdk_macros::{init, query, update};
 
@@ -15,7 +15,7 @@ use self::canister::Canister;
 use self::storage::config::Config;
 
 #[init]
-pub fn init(args: OrchestratorInitArgs) {
+pub fn init(args: OrchestratorInstallArgs) {
     Canister::init(args);
 }
 
