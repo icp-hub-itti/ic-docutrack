@@ -1,5 +1,5 @@
 use candid::Principal;
-use did::orchestrator::{FileId, RevokeShareFileResponse, ShareFileResponse};
+use did::orchestrator::{FileId, RevokeShareFileResponse, ShareFileMetadata, ShareFileResponse};
 use ic_cdk::call::{Call, CallResult, Error as CallError};
 
 /// Orchestrator canister client.
@@ -57,9 +57,10 @@ impl OrchestratorClient {
         &self,
         user: Principal,
         file_id: FileId,
+        metadata: ShareFileMetadata,
     ) -> CallResult<ShareFileResponse> {
         Call::unbounded_wait(self.principal, "share_file")
-            .with_args(&(user, file_id))
+            .with_args(&(user, file_id, metadata))
             .await
             .map_err(CallError::from)?
             .candid::<ShareFileResponse>()
@@ -71,9 +72,10 @@ impl OrchestratorClient {
         &self,
         users: &[Principal],
         file_id: FileId,
+        metadata: ShareFileMetadata,
     ) -> CallResult<ShareFileResponse> {
         Call::unbounded_wait(self.principal, "share_file_with_users")
-            .with_args(&(users, file_id))
+            .with_args(&(users, file_id, metadata))
             .await
             .map_err(CallError::from)?
             .candid::<ShareFileResponse>()

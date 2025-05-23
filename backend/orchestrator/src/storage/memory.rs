@@ -12,6 +12,8 @@ pub const USER_CANISTERS_INDEX_MEMORY_ID: MemoryId = MemoryId::new(21);
 pub const USER_CANISTER_CREATE_STATES_MEMORY_ID: MemoryId = MemoryId::new(22);
 
 pub const SHARED_FILES_MEMORY_ID: MemoryId = MemoryId::new(30);
+pub const SHARED_FILES_METADATA_MEMORY_ID: MemoryId = MemoryId::new(31);
+pub const SHARED_FILES_METADATA_RC_MEMORY_ID: MemoryId = MemoryId::new(32);
 
 thread_local! {
     /// Memory manager

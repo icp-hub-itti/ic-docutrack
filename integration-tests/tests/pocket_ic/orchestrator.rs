@@ -163,7 +163,11 @@ async fn test_should_return_shared_files() {
         .get(&env.user_canister())
         .expect("Expected file on owner canister");
     assert_eq!(shared_file_on_owner_canister.len(), 1);
-    assert!(shared_file_on_owner_canister.contains(&file_id));
+    assert!(
+        shared_file_on_owner_canister
+            .iter()
+            .any(|it| it.file_id == file_id)
+    );
 
     env.stop().await;
 }

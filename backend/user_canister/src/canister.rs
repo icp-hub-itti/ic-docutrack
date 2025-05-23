@@ -3,7 +3,7 @@ mod share;
 use std::collections::BTreeMap;
 
 use candid::Principal;
-use did::orchestrator::ShareFileResponse;
+use did::orchestrator::{ShareFileMetadata, ShareFileResponse};
 use did::user_canister::{
     AliasInfo, DeleteFileResponse, FileData, FileDownloadResponse, FileSharingResponse, FileStatus,
     GetAliasInfoError, OwnerKey, PublicFileMetadata, UploadFileAtomicRequest,
@@ -281,10 +281,20 @@ impl Canister {
             }
         }
 
+        let Some(file) = FileDataStorage::get_file(&file_id) else {
+            return FileSharingResponse::FileNotFound;
+        };
+
         // Index Share file on the orchestrator
         if cfg!(target_family = "wasm") {
             match OrchestratorClient::from(Config::get_orchestrator())
-                .share_file(user_id, file_id)
+                .share_file(
+                    user_id,
+                    file_id,
+                    ShareFileMetadata {
+                        file_name: file.metadata.file_name,
+                    },
+                )
                 .await
             {
                 Err(err) => {
@@ -321,10 +331,20 @@ impl Canister {
             }
         }
 
+        let Some(file) = FileDataStorage::get_file(&file_id) else {
+            trap("File not found");
+        };
+
         // Index files on the orchestrator
         if cfg!(target_family = "wasm") {
             match OrchestratorClient::from(Config::get_orchestrator())
-                .share_file_with_users(&users, file_id)
+                .share_file_with_users(
+                    &users,
+                    file_id,
+                    ShareFileMetadata {
+                        file_name: file.metadata.file_name,
+                    },
+                )
                 .await
             {
                 Err(err) => {

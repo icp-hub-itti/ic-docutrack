@@ -4,9 +4,9 @@ use candid::Principal;
 use create_user::CreateUserStateMachine;
 use did::orchestrator::{
     FileId, GetUsersResponse, GetUsersResponseUsers, MAX_USERNAME_SIZE, OrchestratorInstallArgs,
-    Pagination, PublicKey, PublicUser, RetryUserCanisterCreationResponse, RevokeShareFileResponse,
-    SetUserResponse, ShareFileResponse, SharedFilesResponse, User, UserCanisterResponse,
-    WhoamiResponse,
+    Pagination, PublicFileMetadata, PublicKey, PublicUser, RetryUserCanisterCreationResponse,
+    RevokeShareFileResponse, SetUserResponse, ShareFileMetadata, ShareFileResponse,
+    SharedFilesResponse, User, UserCanisterResponse, WhoamiResponse,
 };
 
 use crate::storage::config::Config;
@@ -206,8 +206,12 @@ impl Canister {
     /// - [`ShareFileResponse::Ok`] if the file was shared successfully.
     /// - [`ShareFileResponse::NoSuchUser`] if the user doesn't exist.
     /// - [`ShareFileResponse::Unauthorized`] if the caller is not a user canister.
-    pub fn share_file(user: Principal, file_id: FileId) -> ShareFileResponse {
-        Self::share_file_with_users(vec![user], file_id)
+    pub fn share_file(
+        user: Principal,
+        file_id: FileId,
+        metadata: ShareFileMetadata,
+    ) -> ShareFileResponse {
+        Self::share_file_with_users(vec![user], file_id, metadata)
     }
 
     /// Share a file with many users.
@@ -217,7 +221,11 @@ impl Canister {
     /// - [`ShareFileResponse::Ok`] if the file was shared successfully.
     /// - [`ShareFileResponse::NoSuchUser`] if the user doesn't exist.
     /// - [`ShareFileResponse::Unauthorized`] if the caller is not a user canister.
-    pub fn share_file_with_users(users: Vec<Principal>, file_id: FileId) -> ShareFileResponse {
+    pub fn share_file_with_users(
+        users: Vec<Principal>,
+        file_id: FileId,
+        metadata: ShareFileMetadata,
+    ) -> ShareFileResponse {
         let user_canister = msg_caller();
         // check if the caller is a user canister
         if !UserCanisterStorage::is_user_canister(user_canister) {
@@ -234,7 +242,7 @@ impl Canister {
 
         // share the file with all the users
         for user in users {
-            SharedFilesStorage::share_file(user, user_canister, file_id);
+            SharedFilesStorage::share_file(user, user_canister, file_id, metadata.clone());
         }
 
         ShareFileResponse::Ok
@@ -258,7 +266,27 @@ impl Canister {
             return SharedFilesResponse::NoSuchUser;
         }
 
-        SharedFilesResponse::SharedFiles(SharedFilesStorage::get_shared_files(caller))
+        SharedFilesResponse::SharedFiles(
+            SharedFilesStorage::get_shared_files(caller)
+                .into_iter()
+                .map(|(user_canister, files)| {
+                    (
+                        user_canister,
+                        files
+                            .into_iter()
+                            .filter_map(|file_id| {
+                                SharedFilesStorage::get_file_metadata(user_canister, file_id).map(
+                                    |file_metadata| PublicFileMetadata {
+                                        file_id,
+                                        file_name: file_metadata.file_name,
+                                    },
+                                )
+                            })
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect(),
+        )
     }
 
     /// Checks whether a given username exists in the storage.
@@ -651,10 +679,25 @@ mod test {
         let file_id = 1;
         let user_canister = Principal::from_text("rwlgt-iiaaa-aaaaa-aaaaa-cai").unwrap();
 
-        SharedFilesStorage::share_file(principal, user_canister, file_id);
+        SharedFilesStorage::share_file(
+            principal,
+            user_canister,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
 
         let mut expected = HashMap::new();
-        expected.insert(user_canister, vec![file_id].into_iter().collect());
+        expected.insert(
+            user_canister,
+            vec![PublicFileMetadata {
+                file_id,
+                file_name: "foo.txt".to_string(),
+            }]
+            .into_iter()
+            .collect(),
+        );
 
         // get shared files
         let shared_files = Canister::shared_files();
@@ -681,7 +724,14 @@ mod test {
 
         // revoke share
         let file_id = 1;
-        SharedFilesStorage::share_file(user, user_canister, file_id);
+        SharedFilesStorage::share_file(
+            user,
+            user_canister,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
         let response = Canister::revoke_share_file(user, file_id);
         assert_eq!(response, RevokeShareFileResponse::Ok);
 
@@ -700,7 +750,14 @@ mod test {
 
         // revoke share
         let file_id = 1;
-        SharedFilesStorage::share_file(user, user_canister, file_id);
+        SharedFilesStorage::share_file(
+            user,
+            user_canister,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
         let response = Canister::revoke_share_file(user, file_id);
         assert_eq!(response, RevokeShareFileResponse::Unauthorized);
 
@@ -724,9 +781,30 @@ mod test {
 
         // revoke share
         let file_id = 1;
-        SharedFilesStorage::share_file(user, user_canister, file_id);
-        SharedFilesStorage::share_file(user_2, user_canister, file_id);
-        SharedFilesStorage::share_file(user_3, user_canister, file_id);
+        SharedFilesStorage::share_file(
+            user,
+            user_canister,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
+        SharedFilesStorage::share_file(
+            user_2,
+            user_canister,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
+        SharedFilesStorage::share_file(
+            user_3,
+            user_canister,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
         let response = Canister::revoke_share_file_for_users(vec![user, user_2], file_id);
         assert_eq!(response, RevokeShareFileResponse::Ok);
 
@@ -762,7 +840,13 @@ mod test {
 
         // share file
         let file_id = 1;
-        let response = Canister::share_file(alice, file_id);
+        let response = Canister::share_file(
+            alice,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
         assert_eq!(response, ShareFileResponse::Ok);
 
         // check if the file is shared
@@ -778,7 +862,13 @@ mod test {
 
         // share file
         let file_id = 1;
-        let response = Canister::share_file(user, file_id);
+        let response = Canister::share_file(
+            user,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
         assert_eq!(response, ShareFileResponse::Unauthorized);
 
         // check if the file is NOT shared
@@ -801,7 +891,13 @@ mod test {
 
         // share file
         let file_id = 1;
-        let response = Canister::share_file(alice, file_id);
+        let response = Canister::share_file(
+            alice,
+            file_id,
+            ShareFileMetadata {
+                file_name: "foo.txt".to_string(),
+            },
+        );
         assert_eq!(response, ShareFileResponse::NoSuchUser(alice));
 
         // check if the file is NOT shared
