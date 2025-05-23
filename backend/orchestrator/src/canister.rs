@@ -66,6 +66,11 @@ impl Canister {
         })
     }
 
+    /// Get a user from the storage as [`PublicUser`].
+    pub fn get_user(principal: Principal) -> Option<PublicUser> {
+        UserStorage::get_user(&principal).map(|user| PublicUser::new(user, principal))
+    }
+
     /// Retry the user canister creation for the current caller.
     ///
     /// # Returns
@@ -332,6 +337,37 @@ mod test {
         }));
 
         assert_eq!(Config::get_orbit_station(), orbit_station);
+    }
+
+    #[test]
+    fn test_should_get_user() {
+        init_canister();
+
+        // setup user
+        let principal = msg_caller();
+        UserStorage::add_user(
+            principal,
+            User {
+                username: "test_user".to_string(),
+                public_key: [1; 32],
+            },
+        );
+
+        // get user
+        let response = Canister::get_user(principal);
+        assert_eq!(
+            response,
+            Some(PublicUser {
+                username: "test_user".to_string(),
+                public_key: [1; 32],
+                ic_principal: principal,
+            })
+        );
+
+        // get user with a different principal
+        let principal = Principal::from_slice(&[1; 6]);
+        let response = Canister::get_user(principal);
+        assert!(response.is_none());
     }
 
     #[test]
