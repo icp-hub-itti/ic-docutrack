@@ -1,9 +1,9 @@
 use candid::Principal;
 use did::orchestrator::{
-    GetUsersResponse, PUBKEY_SIZE, Pagination, PublicUser, SetUserResponse, SharedFilesResponse,
+    GetUsersResponse, Pagination, PublicKey, PublicUser, SetUserResponse, SharedFilesResponse,
     WhoamiResponse,
 };
-use did::user_canister::{ENCRYPTION_KEY_SIZE, FileSharingResponse, UploadFileAtomicRequest};
+use did::user_canister::{FileSharingResponse, OwnerKey, UploadFileAtomicRequest};
 use integration_tests::actor::{admin, alice};
 use integration_tests::{OrchestratorClient, PocketIcTestEnv, TestEnv, UserCanisterClient};
 
@@ -25,7 +25,7 @@ async fn test_should_register_user() {
     let me = Principal::from_slice(&[1; 29]);
 
     let username = "foo".to_string();
-    let public_key = [1; PUBKEY_SIZE];
+    let public_key = PublicKey::default();
 
     // we check if username is available
     assert!(!client.username_exists(username.clone()).await,);
@@ -57,7 +57,7 @@ async fn test_should_not_register_user_if_anonymous() {
     let client = OrchestratorClient::from(&env);
 
     let username = "foo".to_string();
-    let public_key = [1; PUBKEY_SIZE];
+    let public_key = PublicKey::default();
     let response = client
         .set_user(Principal::anonymous(), username, public_key)
         .await;
@@ -92,7 +92,7 @@ async fn test_should_create_user_canister() {
 
     let me = alice();
     let username = "alice".to_string();
-    let public_key = [1; PUBKEY_SIZE];
+    let public_key = PublicKey::default();
 
     // create user canister
     let response = client.set_user(me, username, public_key).await;
@@ -125,7 +125,7 @@ async fn test_should_return_shared_files() {
 
     // register alice on orchestrator
     let response = orchestrator_client
-        .set_user(shared_with, "alice".to_string(), [1; PUBKEY_SIZE])
+        .set_user(shared_with, "alice".to_string(), PublicKey::default())
         .await;
     assert_eq!(response, SetUserResponse::Ok);
 
@@ -138,7 +138,7 @@ async fn test_should_return_shared_files() {
                 name: request_name.clone(),
                 content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 1,
             },
             owner,
@@ -148,7 +148,7 @@ async fn test_should_return_shared_files() {
     // share file with alice
     assert_eq!(
         user_canister_client
-            .share_file(owner, file_id, shared_with, [1; ENCRYPTION_KEY_SIZE])
+            .share_file(owner, file_id, shared_with, [1; OwnerKey::KEY_SIZE].into())
             .await,
         FileSharingResponse::Ok
     );

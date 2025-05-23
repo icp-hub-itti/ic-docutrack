@@ -3,14 +3,10 @@ use ic_stable_structures::Storable;
 use ic_stable_structures::storable::Bound;
 use serde::{Deserialize, Serialize};
 
+use super::PublicKey;
+
 /// Maximum username size
 pub const MAX_USERNAME_SIZE: usize = 255;
-
-/// User Public key size
-pub const PUBKEY_SIZE: usize = 32;
-
-/// User Public key
-pub type PublicKey = [u8; PUBKEY_SIZE];
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct User {
@@ -21,16 +17,16 @@ pub struct User {
 impl Storable for User {
     /// 1 for username length, up to 255 for username, 32 for public key
     const BOUND: Bound = Bound::Bounded {
-        max_size: 1 + MAX_USERNAME_SIZE as u32 + PUBKEY_SIZE as u32,
+        max_size: 1 + MAX_USERNAME_SIZE as u32 + PublicKey::BOUND.max_size(),
         is_fixed_size: false,
     };
 
     fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
         let username_len: u8 = bytes[0];
         let username = String::from_utf8_lossy(&bytes[1..1 + username_len as usize]).to_string();
-        let public_key = bytes[1 + username_len as usize..1 + username_len as usize + PUBKEY_SIZE]
-            .try_into()
-            .expect("Invalid public key size");
+
+        let pubkey_start = 1 + username_len as usize;
+        let public_key = PublicKey::from_bytes(bytes[pubkey_start..].into());
 
         User {
             username,
@@ -40,14 +36,15 @@ impl Storable for User {
 
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
         let username_len = self.username.len() as u8;
-        let mut bytes = Vec::with_capacity(1 + username_len as usize + PUBKEY_SIZE + 29);
+        let mut bytes =
+            Vec::with_capacity(1 + username_len as usize + self.public_key.encoding_size() + 29);
 
         // encode username
         bytes.push(username_len);
         bytes.extend_from_slice(self.username.as_bytes());
 
         // encode public key
-        bytes.extend_from_slice(&self.public_key);
+        bytes.extend_from_slice(&self.public_key.to_bytes());
 
         bytes.into()
     }
@@ -57,7 +54,7 @@ impl Storable for User {
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct PublicUser {
     pub username: String,
-    pub public_key: [u8; PUBKEY_SIZE],
+    pub public_key: PublicKey,
     pub ic_principal: Principal,
 }
 
@@ -120,7 +117,7 @@ mod test {
     fn test_storable_user_roundtrip() {
         let user = User {
             username: "test_user".to_string(),
-            public_key: [1; PUBKEY_SIZE],
+            public_key: vec![1; 5].try_into().unwrap(),
         };
 
         let bytes = user.to_bytes();
@@ -133,7 +130,7 @@ mod test {
     fn test_should_create_public_user_from_user() {
         let user = User {
             username: "test_user".to_string(),
-            public_key: [1; PUBKEY_SIZE],
+            public_key: vec![1; PublicKey::MAX_KEY_SIZE].try_into().unwrap(),
         };
         let ic_principal = Principal::from_slice(&[2; 29]);
 

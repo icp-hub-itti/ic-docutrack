@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use candid::Principal;
 use did::StorablePrincipal;
-use did::orchestrator::PublicKey;
+use did::user_canister::PublicKey;
 use did::utils::trap;
 use ic_stable_structures::memory_manager::VirtualMemory;
 use ic_stable_structures::{DefaultMemoryImpl, StableCell};
@@ -19,7 +19,7 @@ thread_local! {
     );
     /// Owner public key
     static OWNER_PUBLIC_KEY: RefCell<StableCell<PublicKey, VirtualMemory<DefaultMemoryImpl>>> =
-        RefCell::new(StableCell::new(MEMORY_MANAGER.with(|mm| mm.get(OWNER_PUBLIC_KEY_MEMORY_ID)), [0;32]).unwrap()
+        RefCell::new(StableCell::new(MEMORY_MANAGER.with(|mm| mm.get(OWNER_PUBLIC_KEY_MEMORY_ID)), PublicKey::default()).unwrap()
     );
     /// Orchestrator
     static ORCHESTRATOR: RefCell<StableCell<StorablePrincipal, VirtualMemory<DefaultMemoryImpl>>> =
@@ -91,7 +91,7 @@ mod test {
     }
     #[test]
     fn test_owner_public_key() {
-        let public_key = [4; 32];
+        let public_key = vec![4; 32].try_into().unwrap();
         let caller = Principal::from_slice(&[5; 29]);
         Canister::init(UserCanisterInstallArgs::Init(UserCanisterInitArgs {
             owner: caller,

@@ -98,7 +98,7 @@ impl UserStorage {
 #[cfg(test)]
 mod test {
 
-    use did::orchestrator::PUBKEY_SIZE;
+    use did::orchestrator::PublicKey;
 
     use super::*;
 
@@ -106,7 +106,7 @@ mod test {
     fn test_should_insert_and_read_users() {
         let user = User {
             username: "test_user".to_string(),
-            public_key: [1; PUBKEY_SIZE],
+            public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
         };
         let principal = Principal::from_slice(&[1; 29]);
 
@@ -120,7 +120,7 @@ mod test {
         // add another user
         let user2 = User {
             username: "test_user2".to_string(),
-            public_key: [2; PUBKEY_SIZE],
+            public_key: PublicKey::try_from(vec![2; 32]).expect("invalid public key"),
         };
         let principal2 = Principal::from_slice(&[2; 29]);
         UserStorage::add_user(principal2, user2.clone());
@@ -139,7 +139,7 @@ mod test {
     fn test_should_panic_when_adding_anonymous_user() {
         let user = User {
             username: "test_user".to_string(),
-            public_key: [1; PUBKEY_SIZE],
+            public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
         };
         let principal = Principal::anonymous();
 
@@ -151,7 +151,7 @@ mod test {
     fn test_should_tell_whether_username_exists() {
         let user = User {
             username: "test_user".to_string(),
-            public_key: [1; PUBKEY_SIZE],
+            public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
         };
         let principal = Principal::from_slice(&[1; 29]);
 

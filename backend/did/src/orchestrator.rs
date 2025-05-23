@@ -12,11 +12,11 @@ pub use self::shared_files::{
     FileId, RevokeShareFileResponse, ShareFileResponse, SharedFilesResponse,
 };
 pub use self::user::{
-    GetUsersResponse, GetUsersResponseUsers, MAX_USERNAME_SIZE, PUBKEY_SIZE, PublicKey, PublicUser,
-    SetUserResponse, User,
+    GetUsersResponse, GetUsersResponseUsers, MAX_USERNAME_SIZE, PublicUser, SetUserResponse, User,
 };
 pub use self::user_canister::{RetryUserCanisterCreationResponse, UserCanisterResponse};
 pub use self::whoami::WhoamiResponse;
+pub use crate::public_key::PublicKey;
 
 /// Orchestrator canister install arguments
 #[derive(Debug, CandidType, Serialize, Deserialize)]

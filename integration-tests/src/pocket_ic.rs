@@ -11,9 +11,7 @@ use did::orbit_station::{
     AdminInitInput, HealthStatus, ListUsersInput, ListUsersResult, SystemInit, SystemInstall,
     SystemUpgraderInput,
 };
-use did::orchestrator::{
-    OrchestratorInitArgs, OrchestratorInstallArgs, PUBKEY_SIZE, SetUserResponse,
-};
+use did::orchestrator::{OrchestratorInitArgs, OrchestratorInstallArgs, SetUserResponse};
 use pocket_ic::nonblocking::PocketIc;
 use serde::de::DeserializeOwned;
 
@@ -178,7 +176,11 @@ impl PocketIcTestEnv {
         let orchestrator_client = OrchestratorClient::from(&pic);
         // create user canister
         let response = orchestrator_client
-            .set_user(admin(), "admin".to_string(), [1; PUBKEY_SIZE])
+            .set_user(
+                admin(),
+                "admin".to_string(),
+                vec![1; 32].try_into().unwrap(),
+            )
             .await;
         assert_eq!(response, SetUserResponse::Ok);
 

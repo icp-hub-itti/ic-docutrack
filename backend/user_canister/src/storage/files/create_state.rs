@@ -2,8 +2,7 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, HashSet};
 
 use candid::Principal;
-use did::orchestrator::{PUBKEY_SIZE, PublicKey};
-use did::user_canister::{ENCRYPTION_KEY_SIZE, OwnerKey};
+use did::user_canister::{OwnerKey, PublicKey};
 use ic_stable_structures::Storable;
 use ic_stable_structures::storable::Bound;
 
@@ -197,16 +196,15 @@ impl FileContent {
         offset += file_type_len;
 
         // Read owner_key
-        // one byte
-        let owner_key_len = bytes[offset] as usize;
-        offset += 1;
-        if offset + owner_key_len > bytes.len() {
+        if offset + OwnerKey::KEY_SIZE > bytes.len() {
             trap("Not enough bytes for owner_key");
         }
-        let owner_key = bytes[offset..offset + owner_key_len]
-            .try_into()
-            .expect("Failed to decode owner_key");
-        offset += owner_key_len;
+        let owner_key = OwnerKey::new(
+            bytes[offset..offset + OwnerKey::KEY_SIZE]
+                .try_into()
+                .expect("Failed to decode owner_key"),
+        );
+        offset += OwnerKey::KEY_SIZE;
 
         // Read shared_keys (no length prefix, first 8 bytes are num_entries)
         let mut shared_keys = BTreeMap::new();
@@ -235,13 +233,15 @@ impl FileContent {
                 .expect("Failed to decode principal");
             offset += principal_len;
 
-            if offset + ENCRYPTION_KEY_SIZE > bytes.len() {
+            if offset + OwnerKey::KEY_SIZE > bytes.len() {
                 trap("Not enough bytes for encryption key");
             }
-            let encryption_key = bytes[offset..offset + ENCRYPTION_KEY_SIZE]
-                .try_into()
-                .expect("Failed to decode encryption key");
-            offset += ENCRYPTION_KEY_SIZE;
+            let encryption_key = OwnerKey::new(
+                bytes[offset..offset + OwnerKey::KEY_SIZE]
+                    .try_into()
+                    .expect("Failed to decode encryption key"),
+            );
+            offset += OwnerKey::KEY_SIZE;
 
             shared_keys.insert(principal, encryption_key);
         }
@@ -273,8 +273,7 @@ impl FileContent {
         bytes.extend_from_slice(file_type.as_bytes());
 
         // Write owner_key
-        bytes.push(owner_key.len() as u8);
-        bytes.extend_from_slice(owner_key);
+        bytes.extend_from_slice(owner_key.as_bytes());
 
         // Write shared_keys (no length prefix , first 8 bytes are num_entries)
         let num_entries = shared_keys.len() as u64;
@@ -285,7 +284,7 @@ impl FileContent {
 
             bytes.push(principal_len as u8);
             bytes.extend_from_slice(principal_bytes);
-            bytes.extend_from_slice(encryption_key);
+            bytes.extend_from_slice(encryption_key.as_bytes());
         }
 
         bytes
@@ -348,16 +347,15 @@ impl FileContent {
         offset += file_type_len;
 
         // Read owner_key
-        // one byte
-        let owner_key_len = bytes[offset] as usize;
-        offset += 1;
-        if offset + owner_key_len > bytes.len() {
+        if offset + OwnerKey::KEY_SIZE > bytes.len() {
             trap("Not enough bytes for owner_key");
         }
-        let owner_key = bytes[offset..offset + owner_key_len]
-            .try_into()
-            .expect("Failed to decode owner_key");
-        offset += owner_key_len;
+        let owner_key = OwnerKey::new(
+            bytes[offset..offset + OwnerKey::KEY_SIZE]
+                .try_into()
+                .expect("Failed to decode owner_key"),
+        );
+        offset += OwnerKey::KEY_SIZE;
 
         // Read shared_keys (no length prefix, first 8 bytes are num_entries)
         let mut shared_keys = BTreeMap::new();
@@ -389,13 +387,15 @@ impl FileContent {
                 .expect("Failed to decode principal");
             offset += principal_len;
 
-            if offset + ENCRYPTION_KEY_SIZE > bytes.len() {
+            if offset + OwnerKey::KEY_SIZE > bytes.len() {
                 trap("Not enough bytes for encryption key");
             }
-            let encryption_key = bytes[offset..offset + ENCRYPTION_KEY_SIZE]
-                .try_into()
-                .expect("Failed to decode encryption key");
-            offset += ENCRYPTION_KEY_SIZE;
+            let encryption_key = OwnerKey::new(
+                bytes[offset..offset + OwnerKey::KEY_SIZE]
+                    .try_into()
+                    .expect("Failed to decode encryption key"),
+            );
+            offset += OwnerKey::KEY_SIZE;
 
             shared_keys.insert(principal, encryption_key);
         }
@@ -436,8 +436,7 @@ impl FileContent {
         bytes.extend_from_slice(file_type.as_bytes());
 
         // Write owner_key
-        bytes.push(owner_key.len() as u8);
-        bytes.extend_from_slice(owner_key);
+        bytes.extend_from_slice(owner_key.as_bytes());
 
         // Write shared_keys (no length prefix , first 8 bytes are num_entries)
         let num_entries = shared_keys.len() as u64;
@@ -448,7 +447,7 @@ impl FileContent {
 
             bytes.push(principal_len as u8);
             bytes.extend_from_slice(principal_bytes);
-            bytes.extend_from_slice(encryption_key);
+            bytes.extend_from_slice(encryption_key.as_bytes());
         }
 
         bytes
@@ -553,7 +552,7 @@ impl Storable for FileMetadata {
     const BOUND: Bound = Bound::Bounded {
         max_size: 1
             + MAX_FILE_NAME_SIZE as u32
-            + PUBKEY_SIZE as u32
+            + PublicKey::BOUND.max_size()
             + MAX_PRINCIPAL_SIZE as u32
             + 8
             + 9,
@@ -575,14 +574,12 @@ impl Storable for FileMetadata {
         let file_name = String::from_utf8(bytes[offset..offset + file_name_len as usize].to_vec())
             .expect("Failed to decode file name");
         offset += file_name_len as usize;
-        if offset + PUBKEY_SIZE > bytes.len() {
+        if offset + PublicKey::KEY_LEN_SIZE > bytes.len() {
             trap("Not enough bytes for public key");
         }
         // Read public key
-        let user_public_key = bytes[offset..offset + PUBKEY_SIZE]
-            .try_into()
-            .expect("Invalid public key size");
-        offset += PUBKEY_SIZE;
+        let user_public_key = PublicKey::from_bytes(bytes[offset..].into());
+        offset += user_public_key.encoding_size();
 
         if offset + 1 > bytes.len() {
             trap("Not enough bytes for principal_len");
@@ -649,7 +646,11 @@ impl Storable for FileMetadata {
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
         let file_name_len = self.file_name.len() as u8;
         let mut bytes = Vec::with_capacity(
-            1 + file_name_len as usize + PUBKEY_SIZE + MAX_PRINCIPAL_SIZE + 8 + 9,
+            1 + file_name_len as usize
+                + self.user_public_key.encoding_size()
+                + MAX_PRINCIPAL_SIZE
+                + 8
+                + 9,
         );
 
         // encode file name
@@ -657,7 +658,7 @@ impl Storable for FileMetadata {
         bytes.extend_from_slice(self.file_name.as_bytes());
 
         // encode public key
-        bytes.extend_from_slice(&self.user_public_key);
+        bytes.extend_from_slice(self.user_public_key.to_bytes().as_ref());
 
         // encode principal
         let principal_bytes = self.requester_principal.as_slice();
@@ -686,7 +687,7 @@ mod tests {
     fn test_storable_file_metadata_roundtrip() {
         let file_metadata = FileMetadata {
             file_name: "test.txt".to_string(),
-            user_public_key: [0; PUBKEY_SIZE],
+            user_public_key: vec![0; 32].try_into().unwrap(),
             requester_principal: Principal::from_slice(&[0, 1, 2, 3]),
             requested_at: 123456789,
             uploaded_at: Some(987654321),
@@ -701,7 +702,7 @@ mod tests {
         let file_content = FileContent::Uploaded {
             num_chunks: 5,
             file_type: "text/plain".to_string(),
-            owner_key: [1; ENCRYPTION_KEY_SIZE],
+            owner_key: [1; OwnerKey::KEY_SIZE].into(),
             shared_keys: BTreeMap::new(),
         };
         let bytes = file_content.to_bytes();
@@ -736,7 +737,7 @@ mod tests {
         let file = File {
             metadata: FileMetadata {
                 file_name: "test.txt".to_string(),
-                user_public_key: [0; PUBKEY_SIZE],
+                user_public_key: vec![0; 32].try_into().unwrap(),
                 requester_principal: Principal::from_slice(&[0; MAX_PRINCIPAL_SIZE]),
                 requested_at: 123456789,
                 uploaded_at: Some(987654321),
@@ -744,7 +745,7 @@ mod tests {
             content: FileContent::Uploaded {
                 num_chunks: 5,
                 file_type: "text/plain".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 shared_keys: BTreeMap::new(),
             },
         };

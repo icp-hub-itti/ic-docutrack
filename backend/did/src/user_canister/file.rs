@@ -1,9 +1,7 @@
 use candid::{CandidType, Principal};
 use serde::{Deserialize, Serialize};
 
-pub const ENCRYPTION_KEY_SIZE: usize = 32;
-// User decryption key
-pub type OwnerKey = [u8; ENCRYPTION_KEY_SIZE];
+use super::OwnerKey;
 
 /// Public file metadata
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -20,6 +18,7 @@ pub struct PublicFileMetadata {
 /// - `uploaded`: The file is fully uploaded and available for download.
 /// - `not_found`: The file is not found.
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[allow(clippy::large_enum_variant)]
 pub enum FileStatus {
     #[serde(rename = "pending")]
     Pending { alias: String, requested_at: u64 },
@@ -57,6 +56,7 @@ pub struct FileData {
 
 /// Download for file download
 #[derive(CandidType, Serialize, Deserialize, PartialEq, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum FileDownloadResponse {
     #[serde(rename = "not_found_file")]
     NotFoundFile,

@@ -38,7 +38,7 @@ mod test {
         let file = File {
             metadata: FileMetadata {
                 file_name: "test_file".to_string(),
-                user_public_key: [1; 32],
+                user_public_key: vec![0; 32].try_into().unwrap(),
                 requester_principal: Principal::from_slice(&[1; 29]),
                 requested_at: 0,
                 uploaded_at: None,
@@ -59,7 +59,7 @@ mod test {
         let file = File {
             metadata: FileMetadata {
                 file_name: "test_file".to_string(),
-                user_public_key: [1; 32],
+                user_public_key: vec![1; 32].try_into().unwrap(),
                 requester_principal: Principal::from_slice(&[1; 29]),
                 requested_at: 0,
                 uploaded_at: None,

@@ -9,6 +9,7 @@
 pub mod orbit_station;
 pub mod orchestrator;
 mod principal;
+mod public_key;
 pub mod user_canister;
 pub mod utils;
 

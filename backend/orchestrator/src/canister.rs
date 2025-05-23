@@ -344,7 +344,7 @@ mod test {
             principal,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -358,7 +358,7 @@ mod test {
             GetUsersResponse::Users(GetUsersResponseUsers {
                 users: vec![PublicUser {
                     username: "test_user".to_string(),
-                    public_key: [1; 32],
+                    public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
                     ic_principal: principal,
                 }],
                 total: 1,
@@ -377,7 +377,7 @@ mod test {
                 Principal::from_slice(&[i; 6]),
                 User {
                     username: format!("test_user_{i}",),
-                    public_key: [1; 32],
+                    public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
                 },
             );
         }
@@ -418,7 +418,7 @@ mod test {
                 Principal::from_slice(&[i; 6]),
                 User {
                     username: format!("test_user_{i}",),
-                    public_key: [1; 32],
+                    public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
                 },
             );
         }
@@ -447,7 +447,7 @@ mod test {
             principal,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -473,7 +473,7 @@ mod test {
             Principal::management_canister(),
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -492,7 +492,7 @@ mod test {
             principal,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -518,7 +518,7 @@ mod test {
             principal,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -537,7 +537,7 @@ mod test {
         // setup user
         let principal = msg_caller();
         let username = "test_user".to_string();
-        let public_key = [1; 32];
+        let public_key = PublicKey::try_from(vec![1; 32]).expect("invalid public key");
 
         // register user
         let response = Canister::set_user(username.clone(), public_key);
@@ -556,7 +556,7 @@ mod test {
         // setup user
         let principal = msg_caller();
         let username = "a".repeat(MAX_USERNAME_SIZE + 1);
-        let public_key = [1; 32];
+        let public_key = PublicKey::try_from(vec![1; 32]).expect("invalid public key");
 
         // register user
         let response = Canister::set_user(username.clone(), public_key);
@@ -573,7 +573,7 @@ mod test {
 
         // setup user
         let username = "test_user".to_string();
-        let public_key = [1; 32];
+        let public_key = PublicKey::try_from(vec![1; 32]).expect("invalid public key");
 
         // register user
         let response = Canister::set_user(username.clone(), public_key);
@@ -594,7 +594,7 @@ mod test {
             principal,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -617,7 +617,7 @@ mod test {
             principal,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -627,7 +627,7 @@ mod test {
             whoami,
             WhoamiResponse::KnownUser(PublicUser {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
                 ic_principal: principal,
             })
         );
@@ -643,7 +643,7 @@ mod test {
             principal,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 
@@ -756,7 +756,7 @@ mod test {
             alice,
             User {
                 username: "test_user".to_string(),
-                public_key: [1; 32],
+                public_key: PublicKey::try_from(vec![1; 32]).expect("invalid public key"),
             },
         );
 

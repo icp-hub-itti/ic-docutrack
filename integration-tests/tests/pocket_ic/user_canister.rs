@@ -1,8 +1,7 @@
 use candid::Principal;
-use did::orchestrator::SetUserResponse;
+use did::orchestrator::{PublicKey, SetUserResponse};
 use did::user_canister::{
-    ENCRYPTION_KEY_SIZE, FileStatus, UploadFileAtomicRequest, UploadFileContinueRequest,
-    UploadFileRequest,
+    FileStatus, OwnerKey, UploadFileAtomicRequest, UploadFileContinueRequest, UploadFileRequest,
 };
 use integration_tests::actor::{admin, alice};
 use integration_tests::{OrchestratorClient, PocketIcTestEnv, UserCanisterClient};
@@ -13,7 +12,7 @@ async fn test_should_set_and_get_public_key() {
     let client = UserCanisterClient::from(&env);
     let me = Principal::from_slice(&[1; 29]);
 
-    let new_public_key = [1; 32];
+    let new_public_key = PublicKey::default();
     // set public key (only owner_can set it)
     client.set_public_key(new_public_key).await;
     // get public key
@@ -67,7 +66,7 @@ async fn test_should_upload_file() {
                 file_id: alias_info.file_id,
                 file_content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; 32],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 1,
             },
             owner,
@@ -78,7 +77,7 @@ async fn test_should_upload_file() {
 
     match public_metadata.file_status {
         FileStatus::Uploaded { document_key, .. } => {
-            assert_eq!(document_key, [1; ENCRYPTION_KEY_SIZE]);
+            assert_eq!(document_key, [1; OwnerKey::KEY_SIZE].into());
         }
         _ => panic!("File status is not uploaded"),
     }
@@ -120,7 +119,7 @@ async fn test_should_upload_file_atomic() {
                 name: request_name.clone(),
                 content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 1,
             },
             owner,
@@ -131,7 +130,7 @@ async fn test_should_upload_file_atomic() {
 
     match public_metadata.file_status {
         FileStatus::Uploaded { document_key, .. } => {
-            assert_eq!(document_key, [1; ENCRYPTION_KEY_SIZE]);
+            assert_eq!(document_key, [1; OwnerKey::KEY_SIZE].into());
         }
         _ => panic!("File status is not uploaded"),
     }
@@ -152,7 +151,7 @@ async fn test_should_upload_file_continue() {
                 name: request_name.clone(),
                 content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 3,
             },
             owner,
@@ -191,7 +190,7 @@ async fn test_should_upload_file_continue() {
     let public_metadata = client.get_requests(owner).await.first().unwrap().clone();
     match public_metadata.file_status {
         FileStatus::Uploaded { document_key, .. } => {
-            assert_eq!(document_key, [1; ENCRYPTION_KEY_SIZE]);
+            assert_eq!(document_key, [1; OwnerKey::KEY_SIZE].into());
         }
         _ => panic!("File status is not uploaded"),
     }
@@ -212,7 +211,7 @@ async fn test_should_download_file() {
                 name: request_name.clone(),
                 content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 3,
             },
             owner,
@@ -251,7 +250,7 @@ async fn test_should_download_file() {
         did::user_canister::FileDownloadResponse::FoundFile(file_data) => {
             assert_eq!(file_data.contents, vec![7, 8, 9]);
             assert_eq!(file_data.file_type, "txt");
-            assert_eq!(file_data.owner_key, [1; ENCRYPTION_KEY_SIZE]);
+            assert_eq!(file_data.owner_key, [1; OwnerKey::KEY_SIZE].into());
             assert_eq!(file_data.num_chunks, 3);
         }
         _ => panic!("File not found"),
@@ -271,7 +270,7 @@ async fn test_should_get_shared_files() {
 
     // register alice on orchestrator
     let response = orchestrator_client
-        .set_user(external_user, "alice".to_string(), [1; ENCRYPTION_KEY_SIZE])
+        .set_user(external_user, "alice".to_string(), PublicKey::default())
         .await;
     assert_eq!(response, SetUserResponse::Ok);
 
@@ -281,7 +280,7 @@ async fn test_should_get_shared_files() {
                 name: request_name.clone(),
                 content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 1,
             },
             owner,
@@ -294,7 +293,12 @@ async fn test_should_get_shared_files() {
     // share file with alice
     assert_eq!(
         client
-            .share_file(owner, file_id, external_user, [1; ENCRYPTION_KEY_SIZE])
+            .share_file(
+                owner,
+                file_id,
+                external_user,
+                [1; OwnerKey::KEY_SIZE].into()
+            )
             .await,
         did::user_canister::FileSharingResponse::Ok
     );
@@ -318,7 +322,7 @@ async fn test_should_delete_file() {
                 name: request_name.clone(),
                 content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 1,
             },
             owner,
@@ -350,7 +354,7 @@ async fn test_should_delete_shared_file() {
 
     // register alice on orchestrator
     let response = orchestrator_client
-        .set_user(external_user, "alice".to_string(), [1; ENCRYPTION_KEY_SIZE])
+        .set_user(external_user, "alice".to_string(), PublicKey::default())
         .await;
     assert_eq!(response, SetUserResponse::Ok);
 
@@ -360,7 +364,7 @@ async fn test_should_delete_shared_file() {
                 name: request_name.clone(),
                 content: vec![1, 2, 3],
                 file_type: "txt".to_string(),
-                owner_key: [1; ENCRYPTION_KEY_SIZE],
+                owner_key: [1; OwnerKey::KEY_SIZE].into(),
                 num_chunks: 1,
             },
             owner,
@@ -370,7 +374,12 @@ async fn test_should_delete_shared_file() {
     // share file with alice
     assert_eq!(
         client
-            .share_file(owner, file_id, external_user, [1; ENCRYPTION_KEY_SIZE])
+            .share_file(
+                owner,
+                file_id,
+                external_user,
+                [1; OwnerKey::KEY_SIZE].into()
+            )
             .await,
         did::user_canister::FileSharingResponse::Ok
     );
